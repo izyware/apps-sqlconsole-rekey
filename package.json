@@ -1,0 +1,26 @@
+{
+  "name": "izyware-sqlconsole-rekey",
+  "version": "1.0.0",
+  "description": "IzyWare SQL Console ReKey Feature Package",
+  "main": "index.js",
+  "scripts": {
+    "rekey": "node node_modules/izy-proxy/cli.js call rekey?table"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/izyware/apps/sqlconsole/rekey"
+  },
+  "dependencies": {
+    "mysql": "2.18.1",
+    "izy-proxy": "5.0.6"
+  },
+  "keywords": [
+    "izyware",
+    "sqlconsole",
+    "rds",
+    "database",
+    "rekey"
+  ],
+  "author": "Izyware Inc",
+  "license": "MIT"
+}
