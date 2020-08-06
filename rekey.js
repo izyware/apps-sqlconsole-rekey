@@ -1,4 +1,3 @@
-
 const modtask = () => {};
 modtask.verbose = {
   logConnectionAttemp: false,
@@ -13,7 +12,7 @@ modtask.table = (queryObject, cb) => {
     ['chain.importProcessor', 'chain', {
       verbose: modtask.verbose
     }],
-    ['//inline/?lookupDBConfig', { dbConfigId }],
+    ['//inline/rel:json?loadById', { id: dbConfigId }],
     chain => chain(['sql.connect', chain.get('outcome').data]),
     ['//inline/?loopBatch', { mode, schema, table, limit, batchSize, batchTrackingTable }],
     chain => {
@@ -105,13 +104,4 @@ modtask.processNextBatch = (queryObject, cb) => {
       chain(['outcome', { success: true, data: recordIds.length }]);
     }
   ]);
-}
-
-modtask.lookupDBConfig = (queryObject, cb) => {
-  const { dbConfigId } = queryObject;
-  try {
-    cb({ success: true, data: JSON.parse(require('fs').readFileSync(`${dbConfigId}`)) })
-  } catch(e) {
-    cb({ reason: e.message });
-  }
 }
