@@ -16,8 +16,11 @@ modtask.sql = (queryObject, cb) => {
     ['sql.query', sqlStr],
     chain => {
       const { data } = chain.get('outcome');
-      console.log(data);
+      console.log(JSON.stringify(data, null, 2));
       chain(['sql.disconnect']);
+    },
+    chain => {
+      chain(['outcome', { success: true }]);
     }
   ]);
 };
