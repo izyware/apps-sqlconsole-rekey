@@ -2,7 +2,10 @@ const modtask = () => {};
 modtask.loadById = (queryObject, cb) => {
     const { id } = queryObject;
     try {
-        cb({ success: true, data: JSON.parse(require('fs').readFileSync(`${id}`)) })
+        if (typeof(id) == 'string') {
+            id = JSON.parse(require('fs').readFileSync(id));
+        }
+        cb({ success: true, data: id });
     } catch(e) {
         cb({ reason: e.message });
     }
