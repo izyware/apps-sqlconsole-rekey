@@ -1,5 +1,18 @@
 # Izy SQL-Console ReKey Feature 
 
+Use the rekey command to reassign the primary key values for rows within a particular table in your relational database. The mapping for newIds and oldIds must be defined in `batchTrackingTable`.
+
+The workflow consists of:
+* for each row, create a record in `batchTrackingTable` with (originalId, newId, tbl) triplet set to the desired values
+* run the rekey command
+
+## Features
+* The tool automatically builds the dependency graph for Primary and Foreign keys in the database and will update all the neccessary records automaticaly. 
+* Record the timestamp for when the changes to rekeying are made: This will allow tracability and rollback
+
+
+## CLI Schema
+
 For command line access use:
 
     npm run query queryObject.dbConfigId xxxx-xxxx queryObject.sqlStr "SELECT 1"
@@ -7,7 +20,8 @@ For command line access use:
 
 
 # External Resources
-* [github link]
+* [github]
+* [npmjs]
 
 # Changelog 
 
@@ -18,4 +32,5 @@ For command line access use:
 * add query command
 * changed lookupConfigFromFile to loadConfigJSONFromID
 
-[github link]: https://github.com/izyware/apps-sqlconsole-rekey
+[github]: https://github.com/izyware/apps-sqlconsole-rekey
+[npmjs]: https://www.npmjs.com/package/izyware-sqlconsole-rekey
