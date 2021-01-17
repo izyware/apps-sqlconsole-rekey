@@ -26,6 +26,8 @@ For command line access use:
 # Changelog 
 
 # V1
+* add index.js and expose basePath
+    * cleaner syntax for referencing in chains by require
 * add support for live JSON object config
    * enables direct launch from Proxy Projects
 * improve formatting for output

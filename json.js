@@ -1,6 +1,6 @@
 const modtask = () => {};
 modtask.loadById = (queryObject, cb) => {
-    const { id } = queryObject;
+    let { id } = queryObject;
     try {
         if (typeof(id) == 'string') {
             id = JSON.parse(require('fs').readFileSync(id));

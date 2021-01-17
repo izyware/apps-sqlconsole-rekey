@@ -15,7 +15,7 @@ const modtask = (chainItem, cb, $chain) => {
       if (modtask.connected) return $chain.chainReturnCB({ reason: 'already connected' });
       var mysql = require('mysql');
       var config = chainItem[i++] || {};
-      if (verbose.logConnectionAttemp) console.log('Connecting to ', config);
+      if (verbose.logConnectionAttempt) console.log('Connecting to ', config.host);
       modtask.connection = mysql.createConnection(config);
       modtask.connected = true;
       $chain.set('outcome', { success: true });
