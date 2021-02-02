@@ -9,6 +9,29 @@ The workflow consists of:
 ## Features
 * The tool automatically builds the dependency graph for Primary and Foreign keys in the database and will update all the neccessary records automaticaly. 
 * Record the timestamp for when the changes to rekeying are made: This will allow tracability and rollback
+* supports stringified cross platform command pattern chains to simplify components that need to delegate, sequence or execute database interactions in hetergenous cloud environment. In addition, this allows bookkeeping and auditing to be conveniently performed transparently.
+* escapes and cleans up parameters. This will protect your components against SQL injection attacks.
+
+## Commands Syntax
+* getUpdate
+* getInsert
+* getInsertSelect
+* select
+
+        ['sql.select', {
+            verbose: {
+                logQuery: false
+            },
+            map: {
+                jsonField1: 'table1.field1',
+                owners: 'NOQUOTE__GROUP_CONCAT(DISTINCT CONCAT(accesscontrol.ownerType , "_", accesscontrol.ownerId) SEPARATOR "__sep__")'
+            },
+            // // useful for parsing joined groups, i.e owners above
+            deserializeGroupConcats: ['owners'],
+            from: 'FROM table1 left join table2 ....',
+            condition: 'WHERE id = 1 limit 1 group by name'
+        ]
+
 
 
 ## CLI Schema
@@ -26,6 +49,7 @@ For command line access use:
 # Changelog 
 
 # V1
+* refactor code and remove dead code. Add more documentation.
 * support `sql.select`
 * support dynamic query generation for `sql.getInsert`.
 * add index.js and expose basePath

@@ -47,10 +47,10 @@ const modtask = (chainItem, cb, $chain) => {
       cb();
       return true;
     case 'select':
-      if (!modtask.node) return $chain.chainReturnCB({ reason: 'dbConnection is not given' });
+      if (!modtask.connected) return $chain.chainReturnCB({ reason: 'not connected' });
       var queryObject = chainItem[i++] || {};
       var _verbose = queryObject.verbose || {};
-      modtask.ldmod('rel:q').select2(queryObject, function (outcome) {
+      modtask.ldmod('rel:q').select2(queryObject, modtask.connection, function (outcome) {
         if (_verbose.logQuery) console.log('sql.query:', outcome.sql);
         if (!outcome.success) return $chain.chainReturnCB(outcome);
         if (queryObject.deserializeGroupConcats) {

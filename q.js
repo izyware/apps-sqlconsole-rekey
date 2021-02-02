@@ -29,7 +29,7 @@ modtask.formatValForSql = function(val) {
    return val;
 }
 
-modtask.select2 = function(params, cb) {
+modtask.select2 = function(params, connection, cb) {
  params.dontAddAsToParams = true;
  var jsonKeyToSqlExpressionMap = params.map || {};
  var sqlExprToJsonKeyMap = {};
@@ -43,13 +43,11 @@ modtask.select2 = function(params, cb) {
    }
  }
  params.map = sqlExprToJsonKeyMap;
- return modtask.select(params, cb);
+ return modtask.select(params, connection, cb);
 }
 
-// expects modtask._modtask.node to be set
 // params = { map: obj or array, condition: '...', from: ' tbl or join' } 
-modtask.select = function(params, cb) {
-   var node = modtask.__modtask.node;
+modtask.select = function(params, connection, cb) {
    var qryStr = '';
    var map = params.map || {};
    var dontAddAsToParams = params.dontAddAsToParams;
@@ -89,7 +87,19 @@ modtask.select = function(params, cb) {
    qryStr += params.condition + Minicore.newLine;
    // Do not put newLine at the begining because crudup won't be able to authorize 
    qryStr = qryStr + Minicore.newLine + Minicore.newLine;
-   node.runQuery2(qryStr, function(data) {
+   connection.query(qryStr, function(err, data, fields) {
+      if (err) return cb({ 
+        sql: qryStr, 
+        reason: JSON.stringify({
+          code: err.code,
+          errno: err.errno,
+          errno: err.errno,
+          errno: err.errno,
+          sqlMessage: err.sqlMessage,
+          sqlState: err.sqlState,
+          sql: err.sql
+        })
+      });
        var outcome = {
            success: true,
            data: [],
@@ -99,18 +109,12 @@ modtask.select = function(params, cb) {
        for (i = 0; i < data.length; ++i) {
            var row = data[i];
            var obj = {};
-           for (j = 0; j < row.length; ++j) {
-               obj[fieldNames[j]] = row[j];
+           for (j = 0; j < fields.length; ++j) {
+               obj[fieldNames[j]] = row[fields[j].name];
            }
            outcome.data.push(obj);
        }
        return cb(outcome);
-   }, function(outcome) {
-     cb({
-       success: false,
-       reason: outcome.reason,
-       sql: qryStr
-     });
    });
 }
 
@@ -126,16 +130,6 @@ modtask.getMysqlDateTimeValueInUTC = function(dateObject) {
 
   return dateObject.getUTCFullYear() + "-" + twoDigits(1 + dateObject.getUTCMonth()) + "-" + twoDigits(dateObject.getUTCDate()) + " " + twoDigits(dateObject.getUTCHours()) + ":" + twoDigits(dateObject.getUTCMinutes()) + ":" + twoDigits(dateObject.getUTCSeconds());
 }
-
-modtask.toJson = function(row, fields, ret) {
-  if (!ret)
-     ret = {};
-  var i; 
-  if (!fields) fields = row;
-  for(i=0; i < row.length; ++i)
-     ret[fields[i]]=row[i];
-  return ret; 
-};   
 
 modtask.getUpdate = function(id, tbl, map) {
   var map;
