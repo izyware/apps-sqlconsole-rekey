@@ -41,6 +41,26 @@ const modtask = (chainItem, cb, $chain) => {
         cb();
       });
       return true;
+    case 'getInsert':
+      var params = chainItem[i++] || {};
+      $chain.set('outcome', modtask.ldmod('rel:q').getInsert(params.table, params.map, params.operator));
+      cb();
+      return true;
+    case 'select':
+      if (!modtask.node) return $chain.chainReturnCB({ reason: 'dbConnection is not given' });
+      var queryObject = chainItem[i++] || {};
+      var _verbose = queryObject.verbose || {};
+      modtask.ldmod('rel:q').select2(queryObject, function (outcome) {
+        if (_verbose.logQuery) console.log('sql.query:', outcome.sql);
+        if (!outcome.success) return $chain.chainReturnCB(outcome);
+        if (queryObject.deserializeGroupConcats) {
+          modtask.ldmod('rel:q').deserializeGroupConcats2(outcome, queryObject.deserializeGroupConcats);
+          if (!outcome.success) return $chain.chainReturnCB(outcome);
+        }
+        $chain.set('outcome', outcome);
+        cb();
+      });
+      return true;
   }
   return false;
 }
