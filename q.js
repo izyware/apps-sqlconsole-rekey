@@ -19,13 +19,17 @@ modtask.formatKeyForSqlColumn = function(p1) {
 }
 
 modtask.formatValForSql = function(val) {
-   // This might be a non string (integer, etc.). convert to string to make sure that indexOf works
-   val = val + '';
-   if (val.indexOf('NOQUOTE__') == 0)
-       val = val.replace(/^NOQUOTE__/, '');
-   else
-       val = "'" + modtask.encodeStringToSQLStrSingleQuoted(val) + "'";
-
+  // If NULL or UNDEFINED, return NULL for SQL
+  if (val == null) {
+    val = 'NULL';
+  } else {
+    // This might be a non string (integer, etc.). convert to string to make sure that indexOf works
+    val = val + '';
+    if (val.indexOf('NOQUOTE__') == 0)
+        val = val.replace(/^NOQUOTE__/, '');
+    else
+        val = "'" + modtask.encodeStringToSQLStrSingleQuoted(val) + "'";
+  }
    return val;
 }
 
