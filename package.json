@@ -1,6 +1,6 @@
 {
   "name": "izyware-sqlconsole-rekey",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "IzyWare SQL Console ReKey Feature Package",
   "main": "index.js",
   "scripts": {
