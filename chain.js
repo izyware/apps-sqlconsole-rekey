@@ -7,39 +7,58 @@ const modtask = (chainItem, cb, $chain) => {
   params.action = modtask.extractPrefix(chainItem[i++]);
   switch (params.action) {
     case 'disconnect':
-      if (!modtask.connected) return $chain.chainReturnCB({ reason: 'not connected' });
-      modtask.connection.end();
-      cb();
+      var session = chainItem[i++];
+      if (!session) session = $chain.get('sqlLastSession');
+      if (!session) return $chain.chainReturnCB({ reason: 'Cannot find a session to run the query on' });
+      if (verbose.logConnectionAttempt) console.log(session.sessionId + ' disconnect ');
+      $chain.newChainForProcessor(modtask, cb, {}, [
+        [session.adapterservice + '?disconnect', { session: session }],
+        function(chain) {
+          $chain.set('outcome', chain.get('outcome').data);
+          cb();
+        }
+      ]);
       return true;
     case 'connect':
-      if (modtask.connected) return $chain.chainReturnCB({ reason: 'already connected' });
-      var mysql = require('mysql');
       var config = chainItem[i++] || {};
-      if (verbose.logConnectionAttempt) console.log('Connecting to ', config.host);
-      modtask.connection = mysql.createConnection(config);
-      modtask.connected = true;
-      $chain.set('outcome', { success: true });
-      cb();
+      var adapterservice = config.adapterservice;
+      if (!adapterservice) adapterservice = '//inline/rel:adapter/mysql';
+      var adapterconfig = config.adapterconfig;
+      if (!adapterconfig) adapterconfig = config;
+      if (verbose.logConnectionAttempt) console.log('Using adapter ', adapterservice, adapterconfig);
+      $chain.newChainForProcessor(modtask, cb, {}, [
+        [adapterservice + '?connect', { config: adapterconfig }],
+        function(chain) {
+          var session = chain.get('outcome').data;
+          session.adapterservice = adapterservice;
+          session.adapterconfig = adapterconfig;
+          $chain.set('sqlLastSession', session);
+          if (verbose.logConnectionAttempt) console.log(session.sessionId + ' connected ');
+          $chain.set('outcome', { success: true, data: session });
+          cb();
+        }
+      ]);
       return true;
     case 'query':
-      if (!modtask.connected) return $chain.chainReturnCB({ reason: 'not connected' });
-      var query = chainItem[i++] || {};
-      var start = (new Date()).getTime();
-      if (verbose.logQuery) console.log(`${params.action}:start`, query);
-      modtask.connection.query(query, (err, data) => {
-        if (verbose.logQuery) console.log(`${params.action}:finish`, (new Date()).getTime() - start);
-        if (err) return $chain.chainReturnCB({ reason: JSON.stringify({
-          code: err.code,
-          errno: err.errno,
-          errno: err.errno,
-          errno: err.errno,
-          sqlMessage: err.sqlMessage,
-          sqlState: err.sqlState,
-          sql: err.sql
-        })});
-        $chain.set('outcome', { success: true, data });
-        cb();
-      });
+      var queryStr = chainItem[i++];
+      var recordFormat = 'json';
+      if (!queryStr) return $chain.chainReturnCB({ reason: 'please specify a query' });
+      if (typeof(queryStr) == 'object') {
+        recordFormat = queryStr.recordFormat;
+        queryStr = queryStr.queryStr;
+      };
+      var session = chainItem[i++];
+      if (!session) session = $chain.get('sqlLastSession');
+      if (!session) return $chain.chainReturnCB({ reason: 'Cannot find a session to run the query on' });
+      if (verbose.logQuery) console.log(session.sessionId + ' ' + queryStr);
+      $chain.newChainForProcessor(modtask, cb, {}, [
+        [session.adapterservice + '?query', { session: session, queryStr: queryStr, recordFormat: recordFormat }],
+        function(chain) {
+          if (verbose.logQuery) console.log(session.sessionId + ' endquery');
+          $chain.set('outcome', chain.get('outcome'));
+          cb();
+        }
+      ]);
       return true;
     case 'getInsert':
       var params = chainItem[i++] || {};
@@ -47,10 +66,12 @@ const modtask = (chainItem, cb, $chain) => {
       cb();
       return true;
     case 'select':
-      if (!modtask.connected) return $chain.chainReturnCB({ reason: 'not connected' });
       var queryObject = chainItem[i++] || {};
       var _verbose = queryObject.verbose || {};
-      modtask.ldmod('rel:q').select2(queryObject, modtask.connection, function (outcome) {
+      var session = chainItem[i++];
+      if (!session) session = $chain.get('sqlLastSession');
+      if (!session) return $chain.chainReturnCB({ reason: 'Cannot find a session' });
+      modtask.ldmod('rel:q').select2(queryObject, $chain, session, function (outcome) {
         if (_verbose.logQuery) console.log('sql.query:', outcome.sql);
         if (!outcome.success) return $chain.chainReturnCB(outcome);
         if (queryObject.deserializeGroupConcats) {

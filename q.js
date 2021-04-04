@@ -33,7 +33,7 @@ modtask.formatValForSql = function(val) {
    return val;
 }
 
-modtask.select2 = function(params, connection, cb) {
+modtask.select2 = function(params, $chain, session, cb) {
  params.dontAddAsToParams = true;
  var jsonKeyToSqlExpressionMap = params.map || {};
  var sqlExprToJsonKeyMap = {};
@@ -47,11 +47,11 @@ modtask.select2 = function(params, connection, cb) {
    }
  }
  params.map = sqlExprToJsonKeyMap;
- return modtask.select(params, connection, cb);
+ return modtask.select(params, $chain, session, cb);
 }
 
 // params = { map: obj or array, condition: '...', from: ' tbl or join' } 
-modtask.select = function(params, connection, cb) {
+modtask.select = function(params, $chain, session, cb) {
    var qryStr = '';
    var map = params.map || {};
    var dontAddAsToParams = params.dontAddAsToParams;
@@ -89,37 +89,28 @@ modtask.select = function(params, connection, cb) {
    qryStr += fields.join(',' + Minicore.newLine) + Minicore.newLine;
    qryStr += params.from + Minicore.newLine;
    qryStr += params.condition + Minicore.newLine;
-   // Do not put newLine at the begining because crudup won't be able to authorize 
-   qryStr = qryStr + Minicore.newLine + Minicore.newLine;
-   connection.query(qryStr, function(err, data, fields) {
-      if (err) return cb({ 
-        sql: qryStr, 
-        reason: JSON.stringify({
-          code: err.code,
-          errno: err.errno,
-          errno: err.errno,
-          errno: err.errno,
-          sqlMessage: err.sqlMessage,
-          sqlState: err.sqlState,
-          sql: err.sql
-        })
-      });
-       var outcome = {
-           success: true,
-           data: [],
-           sql: qryStr
-       };
-       var i, j;
-       for (i = 0; i < data.length; ++i) {
-           var row = data[i];
-           var obj = {};
-           for (j = 0; j < fields.length; ++j) {
-               obj[fieldNames[j]] = row[fields[j].name];
-           }
-           outcome.data.push(obj);
-       }
-       return cb(outcome);
-   });
+   $chain.newChainForProcessor(modtask, cb, {}, [
+    ['sql.query', { queryStr: qryStr, recordFormat: 'array' }, session],
+    function(chain) {
+      var outcome = chain.get('outcome');
+      var data = outcome.data;
+      var outcome = {
+        success: true,
+        data: [],
+        sql: qryStr
+      };
+      var i, j;
+      for (i = 0; i < data.length; ++i) {
+          var row = data[i];
+          var obj = {};
+          for (j = 0; j < row.length; ++j) {
+              obj[fieldNames[j]] = row[j];
+          }
+          outcome.data.push(obj);
+      }
+      return cb(outcome);
+    }
+  ]);
 }
 
 
