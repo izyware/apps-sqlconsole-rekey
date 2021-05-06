@@ -5,11 +5,19 @@ const modtask = (chainItem, cb, $chain) => {
   var i = 0;
   var params = {};
   params.action = modtask.extractPrefix(chainItem[i++]);
+
+  function findSession(chainParam, $chain) {
+    var session = chainItem[i++];
+    if (!session) session = $chain.get('sqlLastSession');
+    if (!session) session = modtask.sqlLastSession;
+    if (!session) return $chain.chainReturnCB({ reason: 'Cannot find a session to access the sql database. Either explicitly provide the session, or try creating a session by using "sql.connect"' });
+    return session;
+  };
+
   switch (params.action) {
     case 'disconnect':
-      var session = chainItem[i++];
-      if (!session) session = $chain.get('sqlLastSession');
-      if (!session) return $chain.chainReturnCB({ reason: 'Cannot find a session to run the query on' });
+      var session = findSession(chainItem[i++], $chain);
+      if (!session) return true;
       if (verbose.logConnectionAttempt) console.log(session.sessionId + ' disconnect ');
       $chain.newChainForProcessor(modtask, cb, {}, [
         [session.adapterservice + '?disconnect', { session: session }],
@@ -33,6 +41,7 @@ const modtask = (chainItem, cb, $chain) => {
           session.adapterservice = adapterservice;
           session.adapterconfig = adapterconfig;
           $chain.set('sqlLastSession', session);
+          modtask.sqlLastSession = session;
           if (verbose.logConnectionAttempt) console.log(session.sessionId + ' connected ');
           $chain.set('outcome', { success: true, data: session });
           cb();
@@ -47,9 +56,8 @@ const modtask = (chainItem, cb, $chain) => {
         recordFormat = queryStr.recordFormat;
         queryStr = queryStr.queryStr;
       };
-      var session = chainItem[i++];
-      if (!session) session = $chain.get('sqlLastSession');
-      if (!session) return $chain.chainReturnCB({ reason: 'Cannot find a session to run the query on' });
+      var session = findSession(chainItem[i++], $chain);
+      if (!session) return true;
       if (verbose.logQuery) console.log(session.sessionId + ' ' + queryStr);
       $chain.newChainForProcessor(modtask, cb, {}, [
         [session.adapterservice + '?query', { session: session, queryStr: queryStr, recordFormat: recordFormat }],
@@ -68,9 +76,8 @@ const modtask = (chainItem, cb, $chain) => {
     case 'select':
       var queryObject = chainItem[i++] || {};
       var _verbose = queryObject.verbose || {};
-      var session = chainItem[i++];
-      if (!session) session = $chain.get('sqlLastSession');
-      if (!session) return $chain.chainReturnCB({ reason: 'Cannot find a session' });
+      var session = findSession(chainItem[i++], $chain);
+      if (!session) return true;
       modtask.ldmod('rel:q').select2(queryObject, $chain, session, function (outcome) {
         if (_verbose.logQuery) console.log('sql.query:', outcome.sql);
         if (!outcome.success) return $chain.chainReturnCB(outcome);
